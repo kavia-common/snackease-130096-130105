@@ -1,48 +1,65 @@
-import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+import './index.css';
+import './assets/index.css';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
+import AuthPage from './pages/AuthPage';
+import HomePage from './pages/HomePage';
+import SnackDetailPage from './pages/SnackDetailPage';
+import CartPage from './pages/CartPage';
+import OrderHistoryPage from './pages/OrderHistoryPage';
+
+// Simple top bar for web context
+function TopBar() {
+  const location = useLocation();
+  const titleMap = {
+    '/': 'Home',
+    '/cart': 'Order details',
+    '/orders': 'Order History',
+    '/auth': 'Sign in / Sign up'
+  };
+  const title = titleMap[location.pathname] || 'SnackEase';
+  return (
+    <div className="topbar">
+      <Link to="/" aria-label="Home" className="icon-button grid-button" style={{ background: 'var(--color-f5f5f5)', borderRadius: 'var(--radius-15)', width: 40, height: 40, position: 'relative' }}>
+        <span className="dot"></span><span className="dot"></span><span className="dot"></span><span className="dot"></span>
+      </Link>
+      <div className="title">{title}</div>
+      <Link to="/orders" aria-label="Orders" className="icon-button profile" />
+    </div>
+  );
+}
+
+function ProtectedRoute({ children }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/auth" replace />;
+  return children;
+}
 
 // PUBLIC_INTERFACE
 function App() {
-  const [theme, setTheme] = useState('light');
-
-  // Effect to apply theme to document element
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
-  // PUBLIC_INTERFACE
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
-  };
-
+  /** Root app with Providers and Routes */
   return (
-    <div className="App">
-      <header className="App-header">
-        <button 
-          className="theme-toggle" 
-          onClick={toggleTheme}
-          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-        >
-          {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
-        </button>
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <p>
-          Current theme: <strong>{theme}</strong>
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <AuthProvider>
+      <CartProvider>
+        <BrowserRouter>
+          <div className="app-shell">
+            <TopBar />
+            <main className="app-content">
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/snack/:id" element={<SnackDetailPage />} />
+                <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+                <Route path="/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </main>
+          </div>
+        </BrowserRouter>
+      </CartProvider>
+    </AuthProvider>
   );
 }
 
